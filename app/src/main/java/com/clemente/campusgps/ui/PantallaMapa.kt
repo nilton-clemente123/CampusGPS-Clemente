@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.clemente.campusgps.model.UbicacionUi
+import com.clemente.campusgps.util.formatearDistancia
 import com.clemente.campusgps.viewmodel.CampusViewModelFactory
 import com.clemente.campusgps.viewmodel.MapaViewModel
 
@@ -44,9 +45,9 @@ fun PantallaMapa() {
     val estado by vm.estado.collectAsState()
     val lugares by vm.lugares.collectAsState()
     val seleccionado by vm.seleccionado.collectAsState()
+    val masCercano by vm.masCercano.collectAsState()
 
 
-    // Solicitar permisos de ubicación
     val permisoLauncher =
         rememberLauncherForActivityResult(
             contract = ActivityResultContracts.RequestMultiplePermissions()
@@ -114,6 +115,56 @@ fun PantallaMapa() {
             }
 
 
+            Button(
+
+                onClick = {
+
+                    masCercano?.let { lugar ->
+                        vm.seleccionar(lugar.id)
+                    }
+                },
+
+                enabled = masCercano != null,
+
+                modifier = Modifier.fillMaxWidth()
+
+            ) {
+                Text("Ir al más cercano")
+            }
+
+
+            // Guardar el valor en una variable local
+            // para evitar problemas de Smart Cast
+            val lugarMasCercano = masCercano
+
+            // Obtener la distancia del lugar más cercano
+            val distanciaMasCercano =
+                lugarMasCercano?.let { lugar ->
+
+                    lugares.firstOrNull {
+                        it.lugar.id == lugar.id
+                    }?.metros
+                }
+
+
+            // Mostrar nombre y distancia del lugar más cercano
+            Text(
+
+                text = if (
+                    lugarMasCercano != null &&
+                    distanciaMasCercano != null
+                ) {
+
+                    "Más cercano: ${lugarMasCercano.nombre} " +
+                            "(${formatearDistancia(distanciaMasCercano)})"
+
+                } else {
+
+                    "Más cercano: Sin calcular"
+                },
+
+                style = MaterialTheme.typography.bodyMedium
+            )
             when (estado) {
 
                 UbicacionUi.Inicial -> {
@@ -151,7 +202,6 @@ fun PantallaMapa() {
                 }
 
                 is UbicacionUi.Error -> {
-                    // Conversión explícita para evitar errores de smart cast
                     val error = estado as UbicacionUi.Error
 
                     Text(
@@ -164,19 +214,17 @@ fun PantallaMapa() {
                 estado = estado,
                 lugares = lugares,
                 seleccionado = seleccionado,
+                masCercano = lugarMasCercano,
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
             )
-
-
             ListaLugares(
 
                 lugares = lugares,
                 seleccionado = seleccionado,
 
                 onClick = { id ->
-
                     vm.seleccionar(id)
                 },
 

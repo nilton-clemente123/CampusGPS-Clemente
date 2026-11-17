@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
+import com.clemente.campusgps.model.Lugar
 import com.clemente.campusgps.model.LugarConDistancia
 import com.clemente.campusgps.model.UbicacionUi
 import com.google.android.gms.maps.CameraUpdateFactory
@@ -20,6 +21,7 @@ fun MapaUbicacion(
     estado: UbicacionUi,
     lugares: List<LugarConDistancia>,
     seleccionado: Int?,
+    masCercano: Lugar?,
     modifier: Modifier = Modifier
 ) {
 
@@ -52,12 +54,10 @@ fun MapaUbicacion(
 
         val id = seleccionado ?: return@LaunchedEffect
 
-        // Buscar el lugar seleccionado
         val lugar = lugares.firstOrNull {
             it.lugar.id == id
         }?.lugar ?: return@LaunchedEffect
 
-        // Desplazar la cámara al lugar seleccionado
         camara.animate(
             CameraUpdateFactory.newLatLngZoom(
                 LatLng(
@@ -74,7 +74,6 @@ fun MapaUbicacion(
         cameraPositionState = camara
     ) {
 
-        // Marcador rojo: ubicación actual del usuario
         val ubicacion = estado as? UbicacionUi.Lista
 
         if (ubicacion != null) {
@@ -92,12 +91,21 @@ fun MapaUbicacion(
             )
         }
 
-        // Marcadores azules: lugares del campus
+
         lugares.forEach { elemento ->
 
             val lugar = elemento.lugar
 
             key(lugar.id) {
+
+                val esMasCercano =
+                    lugar.id == masCercano?.id
+
+                val colorMarcador = if (esMasCercano) {
+                    BitmapDescriptorFactory.HUE_GREEN
+                } else {
+                    BitmapDescriptorFactory.HUE_AZURE
+                }
 
                 Marker(
                     state = rememberUpdatedMarkerState(
@@ -109,7 +117,7 @@ fun MapaUbicacion(
                     title = lugar.nombre,
                     snippet = lugar.categoria,
                     icon = BitmapDescriptorFactory.defaultMarker(
-                        BitmapDescriptorFactory.HUE_AZURE
+                        colorMarcador
                     )
                 )
             }

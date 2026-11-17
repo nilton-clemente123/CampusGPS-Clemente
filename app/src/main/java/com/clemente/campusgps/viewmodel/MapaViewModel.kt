@@ -5,14 +5,18 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.clemente.campusgps.data.LugaresRepository
 import com.clemente.campusgps.data.UbicacionRepository
+import com.clemente.campusgps.model.Lugar
 import com.clemente.campusgps.model.LugarConDistancia
 import com.clemente.campusgps.model.Posicion
 import com.clemente.campusgps.model.UbicacionUi
 import com.clemente.campusgps.util.distanciaMetros
 import com.clemente.campusgps.util.formatearDistancia
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class MapaViewModel(
@@ -26,7 +30,6 @@ class MapaViewModel(
 
     val estado: StateFlow<UbicacionUi> =
         _estado.asStateFlow()
-
     // Lista de lugares con sus distancias
     private val _lugares = MutableStateFlow(
         lugaresRepo.obtenerLugares().map {
@@ -45,7 +48,20 @@ class MapaViewModel(
         _seleccionado.asStateFlow()
 
 
-    // Obtener la ubicación actual del usuario
+    // Obtener automáticamente el lugar más cercano
+    val masCercano: StateFlow<Lugar?> =
+        lugares.map { lista ->
+            lista.firstOrNull {
+                it.metros != null
+            }?.lugar
+        }.stateIn(
+            viewModelScope,
+            SharingStarted.WhileSubscribed(5000),
+            null
+        )
+
+
+    // Buscar la ubicación actual
     fun buscar() {
         _estado.value = UbicacionUi.Buscando
 
@@ -55,7 +71,6 @@ class MapaViewModel(
                 .onSuccess { posicion ->
                     actualizarDistancias(posicion)
 
-                    // Actualizar estado de ubicación
                     _estado.value =
                         UbicacionUi.Lista(posicion)
                 }
@@ -82,13 +97,11 @@ class MapaViewModel(
                 )
             }
 
-            // Ordenar desde el más cercano al más lejano
             .sortedBy { it.metros }
 
-        // Publicar la lista actualizada
         _lugares.value = listaActualizada
 
-        // Mostrar resultados en Logcat
+        // Registrar resultados en Logcat
         listaActualizada.forEach { elemento ->
 
             val distancia = elemento.metros
@@ -103,14 +116,12 @@ class MapaViewModel(
         }
     }
 
-    // Seleccionar un lugar de la lista
     fun seleccionar(id: Int?) {
 
         _seleccionado.value = id
     }
 
 
-    // Manejar el rechazo del permiso
     fun permisoDenegado() {
 
         _estado.value = UbicacionUi.Error(
@@ -119,7 +130,6 @@ class MapaViewModel(
     }
 
 
-    // Obtener el mensaje de error
     private fun mensajeDe(e: Throwable): String = when (e) {
 
         is SecurityException ->
