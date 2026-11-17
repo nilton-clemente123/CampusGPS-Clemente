@@ -23,8 +23,12 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -33,6 +37,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.clemente.campusgps.model.UbicacionUi
 import com.clemente.campusgps.model.CategoriaFiltro
@@ -53,10 +60,33 @@ fun PantallaMapa() {
     val seleccionado by vm.seleccionado.collectAsState()
     val masCercano by vm.masCercano.collectAsState()
     val categoria by vm.categoria.collectAsState()
+    val lifecycleOwner = LocalLifecycleOwner.current
+    fun tienePermisoUbicacion(): Boolean =
+        ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) ==
+            PackageManager.PERMISSION_GRANTED ||
+            ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) ==
+            PackageManager.PERMISSION_GRANTED
+
+    var tienePermiso by remember(context) { mutableStateOf(false) }
+    DisposableEffect(lifecycleOwner, context) {
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_RESUME -> tienePermiso = tienePermisoUbicacion()
+                Lifecycle.Event.ON_PAUSE -> tienePermiso = false
+                else -> Unit
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        if (lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) {
+            tienePermiso = tienePermisoUbicacion()
+        }
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
 
     val permisoLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions()
     ) { permisos ->
+        tienePermiso = tienePermisoUbicacion()
         if (permisos[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
             permisos[Manifest.permission.ACCESS_COARSE_LOCATION] == true
         ) {
@@ -67,13 +97,8 @@ fun PantallaMapa() {
     }
 
     val buscarUbicacion = {
-        val preciso = ContextCompat.checkSelfPermission(
-            context, Manifest.permission.ACCESS_FINE_LOCATION
-        ) == PackageManager.PERMISSION_GRANTED
-        val aproximado = ContextCompat.checkSelfPermission(
-            context, Manifest.permission.ACCESS_COARSE_LOCATION
-        ) == PackageManager.PERMISSION_GRANTED
-        if (preciso || aproximado) {
+        tienePermiso = tienePermisoUbicacion()
+        if (tienePermiso) {
             vm.buscar()
         } else {
             permisoLauncher.launch(
@@ -109,6 +134,7 @@ fun PantallaMapa() {
                     lugares = lugares,
                     seleccionado = seleccionado,
                     masCercano = lugarMasCercano,
+                    tienePermisoUbicacion = tienePermiso,
                     modifier = Modifier.fillMaxWidth().weight(1f)
                 )
             }
