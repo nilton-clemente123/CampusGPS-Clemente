@@ -23,7 +23,6 @@ fun MapaUbicacion(
     modifier: Modifier = Modifier
 ) {
 
-    // Posición inicial del mapa: Lima
     val camara = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(
             LatLng(-12.0464, -77.0428),
@@ -31,22 +30,43 @@ fun MapaUbicacion(
         )
     }
 
-    // Mover la cámara cuando se obtiene la ubicación
     LaunchedEffect(estado) {
-        if (estado is UbicacionUi.Lista) {
 
-            val posicion = estado.posicion
+        val ubicacion = estado as? UbicacionUi.Lista
+            ?: return@LaunchedEffect
 
-            camara.animate(
-                CameraUpdateFactory.newLatLngZoom(
-                    LatLng(
-                        posicion.latitud,
-                        posicion.longitud
-                    ),
-                    16f
-                )
+        val posicion = ubicacion.posicion
+
+        camara.animate(
+            CameraUpdateFactory.newLatLngZoom(
+                LatLng(
+                    posicion.latitud,
+                    posicion.longitud
+                ),
+                16f
             )
-        }
+        )
+    }
+
+    LaunchedEffect(seleccionado) {
+
+        val id = seleccionado ?: return@LaunchedEffect
+
+        // Buscar el lugar seleccionado
+        val lugar = lugares.firstOrNull {
+            it.lugar.id == id
+        }?.lugar ?: return@LaunchedEffect
+
+        // Desplazar la cámara al lugar seleccionado
+        camara.animate(
+            CameraUpdateFactory.newLatLngZoom(
+                LatLng(
+                    lugar.latitud,
+                    lugar.longitud
+                ),
+                17f
+            )
+        )
     }
 
     GoogleMap(
@@ -54,10 +74,12 @@ fun MapaUbicacion(
         cameraPositionState = camara
     ) {
 
-        // 1. Marcador rojo de la ubicación del usuario
-        if (estado is UbicacionUi.Lista) {
+        // Marcador rojo: ubicación actual del usuario
+        val ubicacion = estado as? UbicacionUi.Lista
 
-            val posicion = estado.posicion
+        if (ubicacion != null) {
+
+            val posicion = ubicacion.posicion
 
             Marker(
                 state = rememberUpdatedMarkerState(
@@ -70,10 +92,10 @@ fun MapaUbicacion(
             )
         }
 
-        // 2. Marcadores azules de los cinco lugares
-        lugares.forEach { lugarConDistancia ->
+        // Marcadores azules: lugares del campus
+        lugares.forEach { elemento ->
 
-            val lugar = lugarConDistancia.lugar
+            val lugar = elemento.lugar
 
             key(lugar.id) {
 

@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -44,21 +45,23 @@ fun PantallaMapa() {
     val lugares by vm.lugares.collectAsState()
     val seleccionado by vm.seleccionado.collectAsState()
 
-    // Solicitud de permisos de ubicación
-    val permisoLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestMultiplePermissions()
-    ) { permisos ->
 
-        val concedido =
-            permisos[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
-                    permisos[Manifest.permission.ACCESS_COARSE_LOCATION] == true
+    // Solicitar permisos de ubicación
+    val permisoLauncher =
+        rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.RequestMultiplePermissions()
+        ) { permisos ->
 
-        if (concedido) {
-            vm.buscar()
-        } else {
-            vm.permisoDenegado()
+            val concedido =
+                permisos[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
+                        permisos[Manifest.permission.ACCESS_COARSE_LOCATION] == true
+
+            if (concedido) {
+                vm.buscar()
+            } else {
+                vm.permisoDenegado()
+            }
         }
-    }
 
     Scaffold(
         topBar = {
@@ -74,9 +77,10 @@ fun PantallaMapa() {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .padding(16.dp)
-        ) {
+                .padding(12.dp),
 
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
             Button(
                 onClick = {
 
@@ -109,21 +113,19 @@ fun PantallaMapa() {
                 Text("Buscar mi ubicación")
             }
 
-            // Mensajes según el estado
+
             when (estado) {
 
                 UbicacionUi.Inicial -> {
                     Text(
-                        text = "Pulsa el botón para encontrar tu ubicación.",
-                        modifier = Modifier.padding(vertical = 8.dp)
+                        text = "Pulsa el botón para encontrar tu ubicación."
                     )
                 }
 
                 UbicacionUi.Buscando -> {
                     Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 12.dp),
+                        modifier = Modifier.fillMaxWidth(),
+
                         horizontalArrangement = Arrangement.Center,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -138,31 +140,26 @@ fun PantallaMapa() {
 
                 is UbicacionUi.Lista -> {
                     val ubicacion = estado as UbicacionUi.Lista
-                    val posicion = ubicacion.posicion
 
                     Text(
-                        text = "Latitud: ${posicion.latitud}",
-                        modifier = Modifier.padding(top = 8.dp)
+                        text = "Latitud: ${ubicacion.posicion.latitud}"
                     )
 
                     Text(
-                        text = "Longitud: ${posicion.longitud}",
-                        modifier = Modifier.padding(bottom = 8.dp)
+                        text = "Longitud: ${ubicacion.posicion.longitud}"
                     )
                 }
 
                 is UbicacionUi.Error -> {
+                    // Conversión explícita para evitar errores de smart cast
                     val error = estado as UbicacionUi.Error
 
                     Text(
                         text = error.mensaje,
-                        color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.padding(vertical = 8.dp)
+                        color = MaterialTheme.colorScheme.error
                     )
                 }
             }
-
-            // Mapa de Google Maps
             MapaUbicacion(
                 estado = estado,
                 lugares = lugares,
@@ -170,6 +167,22 @@ fun PantallaMapa() {
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
+            )
+
+
+            ListaLugares(
+
+                lugares = lugares,
+                seleccionado = seleccionado,
+
+                onClick = { id ->
+
+                    vm.seleccionar(id)
+                },
+
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(220.dp)
             )
         }
     }

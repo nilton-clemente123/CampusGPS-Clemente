@@ -27,7 +27,7 @@ class MapaViewModel(
     val estado: StateFlow<UbicacionUi> =
         _estado.asStateFlow()
 
-    // Lista de lugares del campus
+    // Lista de lugares con sus distancias
     private val _lugares = MutableStateFlow(
         lugaresRepo.obtenerLugares().map {
             LugarConDistancia(it, null)
@@ -38,12 +38,14 @@ class MapaViewModel(
         _lugares.asStateFlow()
 
     // Identificador del lugar seleccionado
-    private val _seleccionado = MutableStateFlow<Int?>(null)
+    private val _seleccionado =
+        MutableStateFlow<Int?>(null)
 
     val seleccionado: StateFlow<Int?> =
         _seleccionado.asStateFlow()
 
-    // Buscar ubicación del usuario
+
+    // Obtener la ubicación actual del usuario
     fun buscar() {
         _estado.value = UbicacionUi.Buscando
 
@@ -51,53 +53,36 @@ class MapaViewModel(
 
             ubicacionRepo.obtenerPosicion()
                 .onSuccess { posicion ->
-
                     actualizarDistancias(posicion)
 
-                    _estado.value = UbicacionUi.Lista(posicion)
+                    // Actualizar estado de ubicación
+                    _estado.value =
+                        UbicacionUi.Lista(posicion)
                 }
                 .onFailure { error ->
 
-                    _estado.value = UbicacionUi.Error(
-                        mensajeDe(error)
-                    )
+                    _estado.value =
+                        UbicacionUi.Error(mensajeDe(error))
                 }
-        }
-    }
-
-    // Cuando el usuario niega el permiso
-    fun permisoDenegado() {
-        _estado.value = UbicacionUi.Error(
-            "Sin permiso de ubicación no puedo mostrar dónde estás"
-        )
-    }
-
-    // Obtener el mensaje correspondiente al error
-    private fun mensajeDe(e: Throwable): String {
-        return when (e) {
-            is SecurityException ->
-                "Falta el permiso de ubicación"
-
-            else ->
-                e.message ?: "No se pudo obtener la ubicación"
         }
     }
 
 
     private fun actualizarDistancias(posicion: Posicion) {
 
-        // Obtener todos los lugares registrados
         val listaActualizada = lugaresRepo.obtenerLugares()
 
-            // Calcular la distancia de cada lugar
             .map { lugar ->
                 LugarConDistancia(
                     lugar = lugar,
-                    metros = distanciaMetros(posicion, lugar)
+                    metros = distanciaMetros(
+                        posicion,
+                        lugar
+                    )
                 )
             }
 
-            // Ordenar desde el más cercano hasta el más lejano
+            // Ordenar desde el más cercano al más lejano
             .sortedBy { it.metros }
 
         // Publicar la lista actualizada
@@ -111,10 +96,37 @@ class MapaViewModel(
             if (distancia != null) {
                 Log.d(
                     "CampusGPS",
-                    "${elemento.lugar.nombre}: ${formatearDistancia(distancia)}"
+                    "${elemento.lugar.nombre}: " +
+                            formatearDistancia(distancia)
                 )
             }
         }
     }
 
+    // Seleccionar un lugar de la lista
+    fun seleccionar(id: Int?) {
+
+        _seleccionado.value = id
+    }
+
+
+    // Manejar el rechazo del permiso
+    fun permisoDenegado() {
+
+        _estado.value = UbicacionUi.Error(
+            "Sin permiso de ubicación no puedo mostrar dónde estás"
+        )
+    }
+
+
+    // Obtener el mensaje de error
+    private fun mensajeDe(e: Throwable): String = when (e) {
+
+        is SecurityException ->
+            "Falta el permiso de ubicación"
+
+        else ->
+            e.message ?: "No se pudo obtener la ubicación"
+    }
 }
+
