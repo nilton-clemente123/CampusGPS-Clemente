@@ -98,23 +98,25 @@ La aplicación utiliza cinco puntos de interés:
 
 ### 1. Solicitud de permisos
 
-![Solicitud de permisos](capturas/01-permiso.png)
+<img width="274" height="604" alt="image" src="https://github.com/user-attachments/assets/b70c1e45-5213-4830-8d3f-252f45cc1302" />
+
 
 ### 2. Mapa con ubicación actual
 
-![Mapa con ubicación actual](capturas/02-ubicacion.png)
+<img width="275" height="609" alt="image" src="https://github.com/user-attachments/assets/9f33f5b0-4cdc-4896-ab26-9bce81b3f183" />
 
 ### 3. Marcadores de los lugares del campus
 
-![Marcadores del campus](capturas/03-marcadores.png)
+<img width="275" height="609" alt="image" src="https://github.com/user-attachments/assets/517f8772-c0b0-4584-941e-514cf98da9ae" />
 
 ### 4. Lista de lugares ordenada por distancia
 
-![Lista ordenada](capturas/04-lista.png)
+<img width="275" height="609" alt="image" src="https://github.com/user-attachments/assets/9fc1286f-d298-423a-9ce3-087cb6057c89" />
 
 ### 5. Manejo de errores
 
-![Manejo de errores](capturas/05-error.png)
+<img width="275" height="609" alt="image" src="https://github.com/user-attachments/assets/9685709b-c6ae-4b23-9d7a-ba4185d90635" />
+<img width="283" height="199" alt="image" src="https://github.com/user-attachments/assets/863598fc-79e0-4eab-8e77-efb2a281c8a7" />
 
 ## Configuración del proyecto
 
