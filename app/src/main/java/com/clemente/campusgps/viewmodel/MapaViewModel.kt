@@ -4,10 +4,12 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.clemente.campusgps.data.LugaresRepository
+import com.clemente.campusgps.data.UbicacionNoDisponibleException
 import com.clemente.campusgps.data.UbicacionRepository
 import com.clemente.campusgps.model.Lugar
 import com.clemente.campusgps.model.LugarConDistancia
 import com.clemente.campusgps.model.Posicion
+import com.clemente.campusgps.model.TipoError
 import com.clemente.campusgps.model.UbicacionUi
 import com.clemente.campusgps.util.distanciaMetros
 import com.clemente.campusgps.util.formatearDistancia
@@ -30,7 +32,6 @@ class MapaViewModel(
 
     val estado: StateFlow<UbicacionUi> =
         _estado.asStateFlow()
-    // Lista de lugares con sus distancias
     private val _lugares = MutableStateFlow(
         lugaresRepo.obtenerLugares().map {
             LugarConDistancia(it, null)
@@ -40,7 +41,6 @@ class MapaViewModel(
     val lugares: StateFlow<List<LugarConDistancia>> =
         _lugares.asStateFlow()
 
-    // Identificador del lugar seleccionado
     private val _seleccionado =
         MutableStateFlow<Int?>(null)
 
@@ -48,7 +48,6 @@ class MapaViewModel(
         _seleccionado.asStateFlow()
 
 
-    // Obtener automáticamente el lugar más cercano
     val masCercano: StateFlow<Lugar?> =
         lugares.map { lista ->
             lista.firstOrNull {
@@ -61,8 +60,19 @@ class MapaViewModel(
         )
 
 
-    // Buscar la ubicación actual
     fun buscar() {
+
+        // Comprobar primero Google Play Services
+        if (!ubicacionRepo.playServicesDisponible()) {
+
+            _estado.value = UbicacionUi.Error(
+                mensaje = "Este dispositivo no tiene Google Play Services",
+                tipo = TipoError.SIN_PLAY_SERVICES
+            )
+
+            return
+        }
+
         _estado.value = UbicacionUi.Buscando
 
         viewModelScope.launch {
@@ -75,9 +85,7 @@ class MapaViewModel(
                         UbicacionUi.Lista(posicion)
                 }
                 .onFailure { error ->
-
-                    _estado.value =
-                        UbicacionUi.Error(mensajeDe(error))
+                    _estado.value = crearError(error)
                 }
         }
     }
@@ -101,7 +109,7 @@ class MapaViewModel(
 
         _lugares.value = listaActualizada
 
-        // Registrar resultados en Logcat
+        // Mostrar resultados en Logcat
         listaActualizada.forEach { elemento ->
 
             val distancia = elemento.metros
@@ -117,7 +125,6 @@ class MapaViewModel(
     }
 
     fun seleccionar(id: Int?) {
-
         _seleccionado.value = id
     }
 
@@ -125,18 +132,42 @@ class MapaViewModel(
     fun permisoDenegado() {
 
         _estado.value = UbicacionUi.Error(
-            "Sin permiso de ubicación no puedo mostrar dónde estás"
+            mensaje = "Sin permiso de ubicación no puedo mostrar dónde estás",
+            tipo = TipoError.SIN_PERMISO
         )
     }
 
 
-    private fun mensajeDe(e: Throwable): String = when (e) {
+    // Identificar el tipo de error recibido
+    private fun crearError(error: Throwable): UbicacionUi.Error {
 
-        is SecurityException ->
-            "Falta el permiso de ubicación"
+        return when (error) {
 
-        else ->
-            e.message ?: "No se pudo obtener la ubicación"
+            is SecurityException -> {
+
+                UbicacionUi.Error(
+                    mensaje = "Falta el permiso de ubicación",
+                    tipo = TipoError.SIN_PERMISO
+                )
+            }
+
+            is UbicacionNoDisponibleException -> {
+
+                UbicacionUi.Error(
+                    mensaje = "Activa el GPS e intenta de nuevo",
+                    tipo = TipoError.GPS_APAGADO
+                )
+            }
+
+            else -> {
+
+                UbicacionUi.Error(
+                    mensaje = error.message
+                        ?: "No se pudo obtener la ubicación",
+                    tipo = TipoError.OTRO
+                )
+            }
+        }
     }
 }
 

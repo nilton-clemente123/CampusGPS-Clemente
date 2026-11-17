@@ -3,4 +3,10 @@ import com.clemente.campusgps.model.Posicion
 
 interface UbicacionRepository {
     suspend fun obtenerPosicion(): Result<Posicion>
+    fun playServicesDisponible(): Boolean
 }
+
+
+class UbicacionNoDisponibleException : Exception(
+    "Activa el GPS e intenta de nuevo"
+)

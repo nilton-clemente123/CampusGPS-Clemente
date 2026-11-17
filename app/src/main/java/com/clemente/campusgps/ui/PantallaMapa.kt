@@ -204,9 +204,11 @@ fun PantallaMapa() {
                 is UbicacionUi.Error -> {
                     val error = estado as UbicacionUi.Error
 
-                    Text(
-                        text = error.mensaje,
-                        color = MaterialTheme.colorScheme.error
+                    MensajeError(
+                        error = error,
+                        onReintentar = {
+                            vm.buscar()
+                        }
                     )
                 }
             }

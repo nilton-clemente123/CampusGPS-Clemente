@@ -1,15 +1,17 @@
-
 package com.clemente.campusgps.data
-
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
+import androidx.core.content.ContextCompat
+import com.clemente.campusgps.model.Posicion
+import com.google.android.gms.common.ConnectionResult
+import com.google.android.gms.common.GoogleApiAvailability
+import com.google.android.gms.location.CurrentLocationRequest
+import com.google.android.gms.location.Granularity
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.google.android.gms.tasks.CancellationTokenSource
-import androidx.core.content.ContextCompat
-import com.clemente.campusgps.model.Posicion
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.tasks.await
 
@@ -22,42 +24,66 @@ class UbicacionRepositoryGoogle(
             context.applicationContext
         )
 
-    private fun tienePermisoUbicacion(): Boolean {
-
-        val permisoPreciso = ContextCompat.checkSelfPermission(
+    private fun tienePermisoPreciso(): Boolean {
+        return ContextCompat.checkSelfPermission(
             context,
             Manifest.permission.ACCESS_FINE_LOCATION
         ) == PackageManager.PERMISSION_GRANTED
+    }
 
-        val permisoAproximado = ContextCompat.checkSelfPermission(
+    private fun tienePermisoAproximado(): Boolean {
+        return ContextCompat.checkSelfPermission(
             context,
             Manifest.permission.ACCESS_COARSE_LOCATION
         ) == PackageManager.PERMISSION_GRANTED
-
-        return permisoPreciso || permisoAproximado
     }
+
+    private fun tienePermisoUbicacion(): Boolean {
+        return tienePermisoPreciso() || tienePermisoAproximado()
+    }
+
+    override fun playServicesDisponible(): Boolean {
+
+        val resultado =
+            GoogleApiAvailability.getInstance()
+                .isGooglePlayServicesAvailable(context)
+
+        return resultado == ConnectionResult.SUCCESS
+    }
+
     @SuppressLint("MissingPermission")
     override suspend fun obtenerPosicion(): Result<Posicion> {
 
         return try {
 
-            // Verificar si existe permiso de ubicación
             if (!tienePermisoUbicacion()) {
-                throw SecurityException("Falta el permiso de ubicación")
+                throw SecurityException(
+                    "Falta el permiso de ubicación"
+                )
             }
 
-            // Solicitar la ubicación actual
+            val solicitud = CurrentLocationRequest.Builder()
+                .setPriority(Priority.PRIORITY_HIGH_ACCURACY)
+                .setGranularity(
+                    Granularity.GRANULARITY_PERMISSION_LEVEL
+                )
+                .setMaxUpdateAgeMillis(0L)
+                .setDurationMillis(20_000L)
+                .build()
+
+            val cancellationTokenSource =
+                CancellationTokenSource()
+
             val ubicacion = fusedLocationClient.getCurrentLocation(
-                Priority.PRIORITY_HIGH_ACCURACY,
-                CancellationTokenSource().token
+                solicitud,
+                cancellationTokenSource.token
             ).await()
 
-            // Verificar si se obtuvo una ubicación
+            // Si no se obtiene ubicación, informar el problema
             if (ubicacion == null) {
-                throw Exception("No se pudo obtener la ubicación")
+                throw UbicacionNoDisponibleException()
             }
 
-            // Convertir las coordenadas al modelo Posicion
             Result.success(
                 Posicion(
                     latitud = ubicacion.latitude,
