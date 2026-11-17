@@ -107,15 +107,18 @@ La aplicación utiliza cinco puntos de interés:
 
 ### 3. Marcadores de los lugares del campus
 
-<img width="275" height="609" alt="image" src="https://github.com/user-attachments/assets/517f8772-c0b0-4584-941e-514cf98da9ae" />
+<img width="212" height="199" alt="image" src="https://github.com/user-attachments/assets/8d7b8671-c7f3-4c52-8e48-82f2b09f8918" />
+
 
 ### 4. Lista de lugares ordenada por distancia
 
-<img width="275" height="609" alt="image" src="https://github.com/user-attachments/assets/9fc1286f-d298-423a-9ce3-087cb6057c89" />
+<img width="272" height="212" alt="image" src="https://github.com/user-attachments/assets/8b478932-cb8f-4637-a831-d89b3aa385fe" />
+
 
 ### 5. Manejo de errores
 
-<img width="275" height="609" alt="image" src="https://github.com/user-attachments/assets/9685709b-c6ae-4b23-9d7a-ba4185d90635" />
+<img width="272" height="168" alt="image" src="https://github.com/user-attachments/assets/81cdfced-4d6a-4dd9-bf41-247bcd83b25b" />
+
 <img width="283" height="199" alt="image" src="https://github.com/user-attachments/assets/863598fc-79e0-4eab-8e77-efb2a281c8a7" />
 
 ## Configuración del proyecto
