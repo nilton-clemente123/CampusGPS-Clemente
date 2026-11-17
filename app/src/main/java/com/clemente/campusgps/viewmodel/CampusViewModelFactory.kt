@@ -5,7 +5,7 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.clemente.campusgps.data.UbicacionRepositoryGoogle
-import com.tecsup.campusgps.data.LugaresRepositoryLocal
+import com.clemente.campusgps.data.LugaresRepositoryLocal
 
 class CampusViewModelFactory(
     private val context: Context
