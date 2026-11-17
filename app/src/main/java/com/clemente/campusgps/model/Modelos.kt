@@ -18,6 +18,14 @@ data class LugarConDistancia(
     val metros: Float?
 )
 
+enum class CategoriaFiltro(val etiqueta: String) {
+    TODOS("Todos"),
+    ESTUDIO("Estudio"),
+    COMIDA("Comida"),
+    EVENTOS("Eventos"),
+    SERVICIOS("Servicios")
+}
+
 sealed interface UbicacionUi {
 
     data object Inicial : UbicacionUi

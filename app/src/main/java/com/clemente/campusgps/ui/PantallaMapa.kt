@@ -10,9 +10,12 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
@@ -32,6 +35,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.clemente.campusgps.model.UbicacionUi
+import com.clemente.campusgps.model.CategoriaFiltro
 import com.clemente.campusgps.util.formatearDistancia
 import com.clemente.campusgps.viewmodel.CampusViewModelFactory
 import com.clemente.campusgps.viewmodel.MapaViewModel
@@ -48,6 +52,7 @@ fun PantallaMapa() {
     val lugares by vm.lugares.collectAsState()
     val seleccionado by vm.seleccionado.collectAsState()
     val masCercano by vm.masCercano.collectAsState()
+    val categoria by vm.categoria.collectAsState()
 
     val permisoLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions()
@@ -137,6 +142,20 @@ fun PantallaMapa() {
                     modifier = Modifier.padding(horizontal = 16.dp)
                 )
                 is UbicacionUi.Lista -> {
+                    Row(
+                        modifier = Modifier.fillMaxWidth()
+                            .horizontalScroll(rememberScrollState())
+                            .padding(horizontal = 12.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        CategoriaFiltro.entries.forEach { opcion ->
+                            FilterChip(
+                                selected = categoria == opcion,
+                                onClick = { vm.seleccionarCategoria(opcion) },
+                                label = { Text(opcion.etiqueta) }
+                            )
+                        }
+                    }
                     OutlinedButton(
                         onClick = { lugarMasCercano?.let { vm.seleccionar(it.id) } },
                         enabled = lugarMasCercano != null,

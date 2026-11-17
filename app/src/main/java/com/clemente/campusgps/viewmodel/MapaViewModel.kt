@@ -7,6 +7,7 @@ import com.clemente.campusgps.data.LugaresRepository
 import com.clemente.campusgps.data.UbicacionNoDisponibleException
 import com.clemente.campusgps.data.UbicacionRepository
 import com.clemente.campusgps.model.Lugar
+import com.clemente.campusgps.model.CategoriaFiltro
 import com.clemente.campusgps.model.LugarConDistancia
 import com.clemente.campusgps.model.Posicion
 import com.clemente.campusgps.model.TipoError
@@ -17,9 +18,19 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+
+internal fun filtrarLugares(
+    lugares: List<LugarConDistancia>,
+    categoria: CategoriaFiltro
+): List<LugarConDistancia> = if (categoria == CategoriaFiltro.TODOS) {
+    lugares
+} else {
+    lugares.filter { it.lugar.categoria.equals(categoria.etiqueta, ignoreCase = true) }
+}
 
 class MapaViewModel(
     private val ubicacionRepo: UbicacionRepository,
@@ -38,8 +49,12 @@ class MapaViewModel(
         }
     )
 
-    val lugares: StateFlow<List<LugarConDistancia>> =
-        _lugares.asStateFlow()
+    private val _categoria = MutableStateFlow(CategoriaFiltro.TODOS)
+    val categoria: StateFlow<CategoriaFiltro> = _categoria.asStateFlow()
+
+    val lugares: StateFlow<List<LugarConDistancia>> = combine(_lugares, categoria) { lista, filtro ->
+        filtrarLugares(lista, filtro)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), _lugares.value)
 
     private val _seleccionado =
         MutableStateFlow<Int?>(null)
@@ -126,6 +141,16 @@ class MapaViewModel(
 
     fun seleccionar(id: Int?) {
         _seleccionado.value = id
+    }
+
+    fun seleccionarCategoria(categoria: CategoriaFiltro) {
+        val seleccionActual = _seleccionado.value
+        if (seleccionActual != null && filtrarLugares(_lugares.value, categoria)
+                .none { it.lugar.id == seleccionActual }
+        ) {
+            _seleccionado.value = null
+        }
+        _categoria.value = categoria
     }
 
 
