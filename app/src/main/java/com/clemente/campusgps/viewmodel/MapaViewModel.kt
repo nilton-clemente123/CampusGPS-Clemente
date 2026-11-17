@@ -1,11 +1,15 @@
 package com.clemente.campusgps.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.clemente.campusgps.data.LugaresRepository
 import com.clemente.campusgps.data.UbicacionRepository
 import com.clemente.campusgps.model.LugarConDistancia
+import com.clemente.campusgps.model.Posicion
 import com.clemente.campusgps.model.UbicacionUi
+import com.clemente.campusgps.util.distanciaMetros
+import com.clemente.campusgps.util.formatearDistancia
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -48,9 +52,9 @@ class MapaViewModel(
             ubicacionRepo.obtenerPosicion()
                 .onSuccess { posicion ->
 
-                    _estado.value = UbicacionUi.Lista(posicion)
+                    actualizarDistancias(posicion)
 
-                    // Más adelante calcularemos las distancias
+                    _estado.value = UbicacionUi.Lista(posicion)
                 }
                 .onFailure { error ->
 
@@ -78,4 +82,39 @@ class MapaViewModel(
                 e.message ?: "No se pudo obtener la ubicación"
         }
     }
+
+
+    private fun actualizarDistancias(posicion: Posicion) {
+
+        // Obtener todos los lugares registrados
+        val listaActualizada = lugaresRepo.obtenerLugares()
+
+            // Calcular la distancia de cada lugar
+            .map { lugar ->
+                LugarConDistancia(
+                    lugar = lugar,
+                    metros = distanciaMetros(posicion, lugar)
+                )
+            }
+
+            // Ordenar desde el más cercano hasta el más lejano
+            .sortedBy { it.metros }
+
+        // Publicar la lista actualizada
+        _lugares.value = listaActualizada
+
+        // Mostrar resultados en Logcat
+        listaActualizada.forEach { elemento ->
+
+            val distancia = elemento.metros
+
+            if (distancia != null) {
+                Log.d(
+                    "CampusGPS",
+                    "${elemento.lugar.nombre}: ${formatearDistancia(distancia)}"
+                )
+            }
+        }
+    }
+
 }
